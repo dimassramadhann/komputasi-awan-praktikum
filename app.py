@@ -1,5 +1,5 @@
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 import os
 import sqlite3
 
@@ -22,11 +22,29 @@ def init_db():
     conn = get_connection()
     try:
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS messages (
+            CREATE TABLE IF NOT EXISTS data_mahasiswa (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                content TEXT NOT NULL
+                matakuliah TEXT NOT NULL,
+                nama TEXT NOT NULL,
+                status TEXT NOT NULL
             )
         """)
+
+        jumlah = conn.execute(
+            "SELECT COUNT(*) FROM data_mahasiswa"
+        ).fetchone()[0]
+
+        if jumlah == 0:
+            conn.execute("""
+                INSERT INTO data_mahasiswa
+                    (matakuliah, nama, status)
+                VALUES (?, ?, ?)
+            """, (
+                "Komputasi Awan",
+                "Dimas Dwi Karunia Ramadhan",
+                "Berhasil Terhubung ke Database & Docker"
+            ))
+
         conn.commit()
     finally:
         conn.close()
@@ -34,46 +52,32 @@ def init_db():
 
 @app.route("/")
 def hello():
-    init_db()
-    return "Halo dari Flask + Docker + Jenkins! SQLite tersambung."
-
-
-@app.route("/messages", methods=["GET"])
-def get_messages():
-    init_db()
-    conn = get_connection()
     try:
-        rows = conn.execute(
-            "SELECT id, content FROM messages ORDER BY id"
-        ).fetchall()
-        return jsonify([dict(row) for row in rows])
-    finally:
-        conn.close()
+        init_db()
 
+        conn = get_connection()
+        try:
+            rows = conn.execute("""
+                SELECT id, matakuliah, nama, status
+                FROM data_mahasiswa
+                ORDER BY id
+            """).fetchall()
 
-@app.route("/messages", methods=["POST"])
-def add_message():
-    data = request.get_json(silent=True) or {}
-    content = data.get("content")
+            return jsonify({
+                "data_mahasiswa": [dict(row) for row in rows],
+                "database_connection": "CONNECTED",
+                "message": "Halo dari Flask + Database SQLite + Docker + Jenkins!"
+            })
+        finally:
+            conn.close()
 
-    if not isinstance(content, str) or not content.strip():
-        return jsonify({"error": "Content tidak boleh kosong"}), 400
-
-    init_db()
-    conn = get_connection()
-    try:
-        cursor = conn.execute(
-            "INSERT INTO messages (content) VALUES (?)",
-            (content.strip(),)
-        )
-        conn.commit()
-
+    except sqlite3.Error:
+        app.logger.exception("Koneksi database gagal")
         return jsonify({
-            "id": cursor.lastrowid,
-            "content": content.strip()
-        }), 201
-    finally:
-        conn.close()
+            "data_mahasiswa": [],
+            "database_connection": "DISCONNECTED",
+            "message": "Gagal terhubung ke database"
+        }), 500
 
 
 if __name__ == "__main__":
