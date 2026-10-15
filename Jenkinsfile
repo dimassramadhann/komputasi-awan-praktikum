@@ -1,7 +1,9 @@
+
 pipeline {
     agent any
 
     environment {
+        PATH+DOCKER = 'C:\\Users\\Dimas Ramadhan\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin'
         IMAGE_NAME = 'dimasramadhan/simple-app'
         REGISTRY_CREDENTIALS = 'dockerhub-credentials'
     }
