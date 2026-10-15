@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     environment {
-        PATH+DOCKER = 'C:\\Users\\Dimas Ramadhan\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin'
+        PATH = "C:\\Users\\Dimas Ramadhan\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;${env.PATH}"
         IMAGE_NAME = 'dimasramadhan/simple-app'
         REGISTRY_CREDENTIALS = 'dockerhub-credentials'
     }
@@ -23,6 +23,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
+                bat 'docker version'
                 bat 'docker build -t %IMAGE_NAME%:%BUILD_NUMBER% .'
             }
         }
